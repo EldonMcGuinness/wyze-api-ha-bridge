@@ -11,6 +11,7 @@ services:
     command:
       - |
         umask 077
+        rm -f /tmp/password_file
         mosquitto_passwd -b -c /tmp/password_file "$$MQTT_USERNAME" "$$MQTT_PASSWORD"
         chown mosquitto:mosquitto /tmp/password_file
         chmod 600 /tmp/password_file
