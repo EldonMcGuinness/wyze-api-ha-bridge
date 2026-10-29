@@ -112,18 +112,26 @@ function deviceInfo(device) {
   };
 }
 
+function deviceClassFor(device) {
+  const name = String(device.nickname || "").toLowerCase();
+  if (name.includes("garage") && name.includes("door")) return "garage_door";
+  if (name.includes("window")) return "window";
+  if (name.includes("door") || name.includes("refrigerator") || name.includes("fridge") || name.includes("freezer")) return "door";
+  return "opening";
+}
+
 async function publishDiscovery(device) {
   const info = deviceInfo(device);
   const payload = {
-    name: info.name,
     unique_id: info.objectId,
+    default_entity_id: `binary_sensor.${slug(info.name)}`,
     state_topic: info.stateTopic,
     availability_topic: info.availabilityTopic,
     payload_on: "ON",
     payload_off: "OFF",
     payload_available: "online",
     payload_not_available: "offline",
-    device_class: "door",
+    device_class: deviceClassFor(device),
     device: {
       identifiers: [`wyze_contact_${info.id}`],
       name: info.name,
