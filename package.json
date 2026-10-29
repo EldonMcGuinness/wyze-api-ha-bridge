@@ -1,0 +1,12 @@
+{
+  "name": "wyze-mqtt-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Persistent Wyze Sense v2 to MQTT bridge with Home Assistant discovery",
+  "main": "index.js",
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "mqtt": "5.16.1",
+    "wyze-api": "1.1.15"
+  }
+}
