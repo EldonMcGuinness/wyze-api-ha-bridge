@@ -12,6 +12,8 @@ services:
       - |
         umask 077
         mosquitto_passwd -b -c /tmp/password_file "$$MQTT_USERNAME" "$$MQTT_PASSWORD"
+        chown mosquitto:mosquitto /tmp/password_file
+        chmod 600 /tmp/password_file
         cat > /tmp/mosquitto.conf <<'MOSQUITTO_CONFIG'
         persistence true
         persistence_location /mosquitto/data/
