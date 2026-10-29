@@ -1,0 +1,69 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: wyze-mqtt-broker
+    restart: unless-stopped
+    init: true
+    environment:
+      MQTT_USERNAME: ${MQTT_USERNAME:?Set MQTT_USERNAME in Portainer stack environment}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?Set MQTT_PASSWORD in Portainer stack environment}
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      set -eu
+      umask 077
+      mosquitto_passwd -b -c /tmp/password_file "$$MQTT_USERNAME" "$$MQTT_PASSWORD"
+      cat > /tmp/mosquitto.conf <<'MOSQUITTO_CONFIG'
+      persistence true
+      persistence_location /mosquitto/data/
+      log_dest stdout
+      listener 1883 0.0.0.0
+      allow_anonymous false
+      password_file /tmp/password_file
+      MOSQUITTO_CONFIG
+      exec mosquitto -c /tmp/mosquitto.conf
+    ports:
+      - "${MQTT_HOST_PORT:-1883}:1883"
+    volumes:
+      - mosquitto_data:/mosquitto/data
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -u \"$$MQTT_USERNAME\" -P \"$$MQTT_PASSWORD\" -t '$$SYS/broker/uptime' -C 1 -W 5 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+
+  wyze-mqtt-bridge:
+    image: ghcr.io/eldonmcguinness/wyze-api-ha-bridge:latest
+    container_name: wyze-mqtt-bridge
+    restart: unless-stopped
+    init: true
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      WYZE_EMAIL: ${WYZE_EMAIL:?Set WYZE_EMAIL in Portainer stack environment}
+      WYZE_PASSWORD: ${WYZE_PASSWORD:?Set WYZE_PASSWORD in Portainer stack environment}
+      WYZE_KEY_ID: ${WYZE_KEY_ID:?Set WYZE_KEY_ID in Portainer stack environment}
+      WYZE_API_KEY: ${WYZE_API_KEY:?Set WYZE_API_KEY in Portainer stack environment}
+      MQTT_URL: mqtt://mosquitto:1883
+      MQTT_USERNAME: ${MQTT_USERNAME:?Set MQTT_USERNAME in Portainer stack environment}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?Set MQTT_PASSWORD in Portainer stack environment}
+      MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:-wyze-mqtt-bridge}
+      MQTT_DISCOVERY_PREFIX: ${MQTT_DISCOVERY_PREFIX:-homeassistant}
+      MQTT_STATE_PREFIX: ${MQTT_STATE_PREFIX:-wyze}
+      POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-30}
+      DEVICE_MODEL: ${DEVICE_MODEL:-DWS2U}
+    volumes:
+      - wyze_data:/data
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 20s
+
+volumes:
+  wyze_data:
+  mosquitto_data:
