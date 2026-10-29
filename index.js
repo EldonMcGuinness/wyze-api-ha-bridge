@@ -2,6 +2,7 @@
 
 const Wyze = require("wyze-api");
 const mqtt = require("mqtt");
+const fs = require("node:fs");
 
 const required = ["WYZE_EMAIL", "WYZE_PASSWORD", "WYZE_KEY_ID", "WYZE_API_KEY", "MQTT_URL"];
 for (const name of required) {
@@ -12,6 +13,9 @@ const intervalSeconds = Number.parseInt(process.env.POLL_INTERVAL_SECONDS || "30
 if (!Number.isInteger(intervalSeconds) || intervalSeconds < 10) {
   throw new Error("POLL_INTERVAL_SECONDS must be an integer of at least 10 seconds");
 }
+
+const wyzeDataPath = "/data/wyze";
+fs.mkdirSync(wyzeDataPath, { recursive: true });
 
 const discoveryPrefix = cleanPrefix(process.env.MQTT_DISCOVERY_PREFIX || "homeassistant");
 const statePrefix = cleanPrefix(process.env.MQTT_STATE_PREFIX || "wyze");
@@ -31,7 +35,7 @@ const wyze = new Wyze({
   password: process.env.WYZE_PASSWORD,
   keyId: process.env.WYZE_KEY_ID,
   apiKey: process.env.WYZE_API_KEY,
-  persistPath: "/data/wyze",
+  persistPath: wyzeDataPath,
   logLevel: "none",
 });
 
@@ -196,3 +200,4 @@ process.on("SIGINT", () => shutdown("SIGINT"));
 log(`Starting Wyze ${deviceModel} to MQTT bridge; poll interval ${intervalSeconds}s`);
 poll();
 timer = setInterval(poll, intervalSeconds * 1_000);
+
