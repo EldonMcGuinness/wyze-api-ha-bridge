@@ -114,7 +114,7 @@ function deviceInfo(device) {
 
 function deviceClassFor(device) {
   const name = String(device.nickname || "").toLowerCase();
-  if (name.includes("garage") && name.includes("door")) return "garage_door";
+  if (/\bgarage\b/.test(name) && /\bcar\b/.test(name)) return "garage_door";
   if (name.includes("window")) return "window";
   if (name.includes("door") || name.includes("refrigerator") || name.includes("fridge") || name.includes("freezer")) return "door";
   return "opening";
